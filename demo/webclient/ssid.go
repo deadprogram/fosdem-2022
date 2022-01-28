@@ -1,7 +1,5 @@
 package main
 
-func init() {
-	ssid = "rems1"
-	password = "salvador1"
-	debug = false // true
-}
+// access point info. change this to match your AP.
+const ssid = "rems1"
+const pass = "salvador1"

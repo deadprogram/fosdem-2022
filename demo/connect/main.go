@@ -1,4 +1,4 @@
-// This example connects to Access Point and prints some info
+// This example connects to an Access Point and prints some info
 package main
 
 import (
@@ -12,7 +12,6 @@ import (
 // these are the default pins for the Arduino Nano33 IoT.
 // change these to connect to a different UART or pins for the ESP8266/ESP32
 var (
-
 	// these are the default pins for the Arduino Nano33 IoT.
 	spi = machine.NINA_SPI
 
@@ -33,7 +32,6 @@ func main() {
 		printTime()
 		time.Sleep(1 * time.Second)
 	}
-
 }
 
 func setup() {

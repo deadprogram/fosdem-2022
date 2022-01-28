@@ -11,19 +11,18 @@ import (
 
 	"tinygo.org/x/drivers/net/mqtt"
 	"tinygo.org/x/drivers/wifinina"
+
+	"tinygo.org/x/drivers/ili9341"
+	"tinygo.org/x/tinyterm"
 )
 
-// IP address of the MQTT broker to use. Replace with your own info.
+// MQTT broker to use. Replace with your own info.
 const server = "tcp://test.mosquitto.org:1883"
 
-//const server = "ssl://test.mosquitto.org:8883"
-
 var (
-	// default SPI for the Adafruit PyPortal
-	spi = machine.NINA_SPI
-
-	// this is the ESP chip that has the WIFININA firmware flashed on it
-	adaptor *wifinina.Device
+	display  *ili9341.Device
+	terminal *tinyterm.Terminal
+	adaptor  *wifinina.Device
 
 	cl      mqtt.Client
 	topicTx = "tinygo/tx"
@@ -31,27 +30,20 @@ var (
 )
 
 func main() {
-	time.Sleep(3000 * time.Millisecond)
+	initDisplay()
 
+	time.Sleep(3000 * time.Millisecond)
 	rand.Seed(time.Now().UnixNano())
 
-	setup()
+	initAdaptor()
+
 	connectToAP()
 	connectToMQTT()
 
 	select {}
 }
 
-func setup() {
-	// Configure SPI for 8Mhz, Mode 0, MSB First
-	spi.Configure(machine.SPIConfig{
-		Frequency: 8 * 1e6,
-		SDO:       machine.NINA_SDO,
-		SDI:       machine.NINA_SDI,
-		SCK:       machine.NINA_SCK,
-	})
-
-	// Init WiFi
+func initAdaptor() {
 	adaptor = wifinina.New(spi,
 		machine.NINA_CS,
 		machine.NINA_ACK,
@@ -60,11 +52,32 @@ func setup() {
 	adaptor.Configure()
 }
 
+// connect to access point
+func connectToAP() {
+	time.Sleep(2 * time.Second)
+	terminalPrintln("Connecting to " + ssid)
+	err := adaptor.ConnectToAccessPoint(ssid, pass, 10*time.Second)
+	if err != nil {
+		failMessage(err.Error())
+	}
+
+	terminalPrintln("Connected.")
+
+	time.Sleep(2 * time.Second)
+	ip, _, _, err := adaptor.GetIP()
+	for ; err != nil; ip, _, _, err = adaptor.GetIP() {
+		failMessage(err.Error())
+	}
+	terminalPrintln(ip.String())
+}
+
 func connectToMQTT() {
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(server).SetClientID("tinygo-client-" + randomString(10))
 
-	println("Connecting to MQTT broker at", server)
+	terminalPrintln("Connecting to MQTT broker at")
+	terminalPrintln(server)
+
 	cl = mqtt.NewClient(opts)
 	if token := cl.Connect(); token.Wait() && token.Error() != nil {
 		failMessage(token.Error().Error())
@@ -82,41 +95,24 @@ func connectToMQTT() {
 
 func publishing() {
 	for i := 0; ; i++ {
-		println("Publishing MQTT message...")
+		terminalPrintln("Publishing MQTT message...")
+		terminalPrintln("")
+
 		data := []byte(fmt.Sprintf(`{"e":[{"n":"hello %d","v":101}]}`, i))
 		token := cl.Publish(topicRx, 0, false, data)
 		token.Wait()
 		if token.Error() != nil {
-			println(token.Error().Error())
+			terminalPrintln(token.Error().Error())
 		}
 
-		time.Sleep(1000 * time.Millisecond)
+		time.Sleep(5 * time.Second)
 	}
 }
 
 func subHandler(client mqtt.Client, msg mqtt.Message) {
-	fmt.Printf("[%s]  ", msg.Topic())
-	fmt.Printf("%s\r\n", msg.Payload())
-}
-
-// connect to access point
-func connectToAP() {
-	time.Sleep(2 * time.Second)
-	println("Connecting to " + ssid)
-	err := adaptor.ConnectToAccessPoint(ssid, pass, 10*time.Second)
-	if err != nil {
-		failMessage(err.Error())
-	}
-
-	println("Connected.")
-
-	time.Sleep(2 * time.Second)
-	ip, _, _, err := adaptor.GetIP()
-	for ; err != nil; ip, _, _, err = adaptor.GetIP() {
-		println(err.Error())
-		time.Sleep(1 * time.Second)
-	}
-	println(ip.String())
+	terminalPrintln("Message received on " + msg.Topic())
+	terminalPrintln(string(msg.Payload()))
+	terminalPrintln("")
 }
 
 // Returns an int >= min, < max
@@ -131,11 +127,4 @@ func randomString(len int) string {
 		bytes[i] = byte(randomInt(65, 90))
 	}
 	return string(bytes)
-}
-
-func failMessage(msg string) {
-	for {
-		println(msg)
-		time.Sleep(1 * time.Second)
-	}
 }
