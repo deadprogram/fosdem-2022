@@ -3,7 +3,7 @@ module github.com/deadprogram/fosdem2022/demo/webclient
 go 1.17
 
 require (
-	tinygo.org/x/drivers v0.19.0
+	tinygo.org/x/drivers v0.19.1-0.20220126220550-f7dce6ae2292
 	tinygo.org/x/tinyfont v0.2.1
 	tinygo.org/x/tinyterm v0.1.0
 )

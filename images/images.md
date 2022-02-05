@@ -1,3 +1,4 @@
+https://commons.wikimedia.org/wiki/File:Clouds.gif
 
 Modified version of:
 https://commons.wikimedia.org/wiki/File:Computer_Networks_anchor_chart.svg

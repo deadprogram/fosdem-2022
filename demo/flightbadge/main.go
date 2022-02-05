@@ -1,7 +1,3 @@
-// TinyGo flight stick using analog joystick and 5 buttons
-// Outputs data via serial port in very simple space-delimited format
-// End of each line of data has "CR-LF" aka 0x13 0x10
-// Each update is sent every 50 ms.
 package main
 
 import (
